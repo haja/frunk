@@ -1,55 +1,49 @@
-pub trait Functor<'a, A, B, F>
-    where A: 'a,
-          F: Fn(&'a A) -> B
-{
-    type Output;
-    fn map(&'a self, f: F) -> Self::Output;
+pub trait Functor {
+    type Contained;
+    type Output<B> : Functor;
+    fn map<F, B>(self, f: F) -> Self::Output<B>
+    where F: Fn(Self::Contained) -> B;
 }
-
-/// Function to map a function over a given functor
-pub fn map<'a, A, B, X, F>(x: &'a X, f: F) -> X::Output
-    where F: Fn(&'a A) -> B,
-          X: Functor<'a, A, B, F>
-{
-    x.map(f)
-}
-
-impl<'a, A, B, F> Functor<'a, A, B, F> for Option<A>
-    where A: 'a,
-          F: Fn(&'a A) -> B
-{
-    type Output = Option<B>;
-    fn map(&'a self, f: F) -> Self::Output {
-        self.as_ref().map(|x| f(&x))
-    }
-}
-
-impl<'a, A, B, F> Functor<'a, A, B, F> for Vec<A>
-    where A: 'a,
-          F: Fn(&'a A) -> B
-{
-    type Output = Vec<B>;
-    fn map(&'a self, f: F) -> Self::Output {
-        self.iter().map(|x| f(&x)).collect()
-    }
-}
-
 
 #[cfg(test)]
 mod test {
-
     use super::*;
 
+    #[derive(PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
+    enum OptionFun<A> {
+        Some(A),
+        None,
+    }
+
+    impl <A> Functor for OptionFun<A> {
+        type Contained = A;
+        type Output<B> = OptionFun<B>;
+        fn map<F, B>(self, f: F) -> Self::Output<B>
+            where F: Fn(Self::Contained) -> B
+        {
+            match self {
+                OptionFun::Some(x) => OptionFun::Some(f(x)),
+                OptionFun::None => OptionFun::None
+            }
+        }
+    }
+
+
     #[test]
-    fn test_option() {
-        let maybe_i = Some(1);
-        assert_eq!(map(&maybe_i, |x| x + 1), Some(2));
+    fn test_option_none() {
+        let maybe = OptionFun::None;
+        assert_eq!(maybe.map(|x: i32| x + 1), OptionFun::None)
     }
 
     #[test]
-    fn test_vec() {
-        let v = vec![1, 2, 3];
-        assert_eq!(map(&v, |x| x + 1), vec![2, 3, 4]);
+    fn test_option_num() {
+        let maybe = OptionFun::Some(1);
+        assert_eq!(maybe.map(|x| x + 1), OptionFun::Some(2));
     }
 
+    #[test]
+    fn test_option_str() {
+        let maybe = OptionFun::Some("ab");
+        assert_eq!(maybe.map(|x| x.len()), OptionFun::Some(2));
+    }
 }
