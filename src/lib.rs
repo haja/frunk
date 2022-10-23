@@ -208,6 +208,7 @@ pub mod monoid;
 pub mod semigroup;
 #[cfg(feature = "validated")]
 pub mod validated;
+pub mod functor;
 
 pub use frunk_core::*;
 pub use frunk_derives::*;
